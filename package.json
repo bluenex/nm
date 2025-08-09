@@ -1,19 +1,38 @@
 {
-  "name": "nm",
+  "name": "@bluenex/nm",
   "version": "1.0.0",
-  "description": "",
+  "description": "A fast and interactive CLI tool for managing node_modules directories",
   "main": "dist/cli.js",
   "bin": {
     "nm": "./dist/cli.js"
   },
   "scripts": {
     "build": "tsc",
-    "dev": "tsc --watch",
     "prepublishOnly": "npm run build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "",
-  "license": "ISC",
+  "keywords": [
+    "node_modules",
+    "cli",
+    "cleanup",
+    "disk-space",
+    "developer-tools"
+  ],
+  "author": "bluenex",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bluenex/nm.git"
+  },
+  "homepage": "https://github.com/bluenex/nm#readme",
+  "bugs": {
+    "url": "https://github.com/bluenex/nm/issues"
+  },
+  "files": [
+    "dist/**/*",
+    "README.md",
+    "LICENSE"
+  ],
   "devDependencies": {
     "@types/node": "^24.2.1",
     "@types/ora": "^3.1.0",
