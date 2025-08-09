@@ -20,7 +20,9 @@
     "typescript": "^5.9.2"
   },
   "dependencies": {
+    "@types/inquirer": "^9.0.9",
     "commander": "^14.0.0",
+    "inquirer": "^12.9.1",
     "ora": "^8.2.0"
   }
 }
