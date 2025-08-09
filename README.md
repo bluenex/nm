@@ -1,5 +1,7 @@
 # Node Modules Manager (nm)
 
+![Vibe Coding](https://img.shields.io/badge/vibe-coding-blue?style=for-the-badge&logo=sparkles&logoColor=white)
+
 A fast and interactive CLI tool for managing `node_modules` directories across your development projects. Find, analyze, and safely remove `node_modules` with an intuitive interface.
 
 ## Features
