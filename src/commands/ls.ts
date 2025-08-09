@@ -1,15 +1,27 @@
 import { readdir, stat } from 'fs/promises';
 import { join, resolve } from 'path';
+import ora, { Ora } from 'ora';
 
 interface NodeModulesInfo {
   path: string;
   size: number;
 }
 
+interface ScanProgress {
+  foundCount: number;
+  currentPath: string;
+}
+
 export async function lsCommand(targetPath: string): Promise<void> {
+  const spinner = ora('Scanning for node_modules directories...').start();
+  
   try {
     const resolvedPath = resolve(targetPath);
-    const nodeModulesInfos = await findNodeModulesWithSizes(resolvedPath);
+    const progress: ScanProgress = { foundCount: 0, currentPath: '' };
+    
+    const nodeModulesInfos = await findNodeModulesWithSizes(resolvedPath, false, progress, spinner);
+    
+    spinner.stop();
     
     if (nodeModulesInfos.length === 0) {
       console.log('No node_modules directories found.');
@@ -25,18 +37,31 @@ export async function lsCommand(targetPath: string): Promise<void> {
     console.log('');
     console.log(`${formatBytes(totalSize)}\tTOTAL`);
   } catch (error) {
+    spinner.stop();
     console.error(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     process.exit(1);
   }
 }
 
-async function findNodeModulesWithSizes(dir: string, isInsideNodeModules = false): Promise<NodeModulesInfo[]> {
+async function findNodeModulesWithSizes(
+  dir: string, 
+  isInsideNodeModules = false, 
+  progress?: ScanProgress,
+  spinner?: Ora
+): Promise<NodeModulesInfo[]> {
   const results: NodeModulesInfo[] = [];
   
   try {
     const dirStat = await stat(dir);
     if (!dirStat.isDirectory()) {
       return results;
+    }
+    
+    // Update progress
+    if (progress && spinner) {
+      progress.currentPath = dir;
+      const shortPath = dir.length > 50 ? '...' + dir.slice(-47) : dir;
+      spinner.text = `Scanning: ${shortPath} (found ${progress.foundCount})`;
     }
     
     const entries = await readdir(dir);
@@ -49,10 +74,19 @@ async function findNodeModulesWithSizes(dir: string, isInsideNodeModules = false
         
         if (entryStat.isDirectory()) {
           if (entry === 'node_modules') {
-            const size = await getDirectorySize(fullPath);
+            if (progress && spinner) {
+              progress.foundCount++;
+              spinner.text = `Calculating size of node_modules #${progress.foundCount}...`;
+            }
+            
+            const size = await getDirectorySize(fullPath, spinner);
             results.push({ path: fullPath, size });
+            
+            if (progress && spinner) {
+              spinner.text = `Found ${progress.foundCount} node_modules directories...`;
+            }
           } else if (!isInsideNodeModules) {
-            const subResults = await findNodeModulesWithSizes(fullPath, false);
+            const subResults = await findNodeModulesWithSizes(fullPath, false, progress, spinner);
             results.push(...subResults);
           }
         }
@@ -67,7 +101,7 @@ async function findNodeModulesWithSizes(dir: string, isInsideNodeModules = false
   return results;
 }
 
-async function getDirectorySize(dirPath: string): Promise<number> {
+async function getDirectorySize(dirPath: string, spinner?: Ora): Promise<number> {
   let totalSize = 0;
   
   try {
@@ -83,7 +117,7 @@ async function getDirectorySize(dirPath: string): Promise<number> {
           // Use blocks * 512 to match du behavior more closely
           totalSize += stats.blocks ? stats.blocks * 512 : stats.size;
         } else if (stats.isDirectory()) {
-          totalSize += await getDirectorySize(fullPath);
+          totalSize += await getDirectorySize(fullPath, spinner);
         }
       } catch (error) {
         continue;
