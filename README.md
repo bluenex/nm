@@ -18,10 +18,12 @@ A fast and interactive CLI tool for managing `node_modules` directories across y
 Here is a list of dependencies used for the project:
 
 ### Runtime Requirements
+
 - Node.js >= 18.x
 - npm >= 8.x
 
 ### Project Dependencies
+
 - Commander.js - CLI argument parsing
 - Inquirer.js - Interactive prompts
 - Ora - Loading spinners
@@ -71,7 +73,8 @@ npx @bluenex/nm ls /Users/username/projects
 ```
 
 Example output:
-```
+
+```txt
 228M    /path/to/project1/node_modules
 156M    /path/to/project2/node_modules
 89M     /path/to/project3/node_modules
@@ -92,6 +95,7 @@ npx @bluenex/nm rm ~/Dev
 ```
 
 The removal process includes:
+
 1. **Scanning** - Finds all `node_modules` directories
 2. **Selection** - Interactive checkbox interface
 3. **Summary** - Shows total space to be freed
@@ -99,7 +103,8 @@ The removal process includes:
 5. **Progress** - Real-time removal progress
 
 Example workflow:
-```
+
+```txt
 ? Select directories to remove: (Press <space> to select)
 ❯◯ 228M  /path/to/project1/node_modules
  ◉ 156M  /path/to/project2/node_modules
@@ -179,3 +184,4 @@ For GitHub releases, push to the repository and create a new release tag.
 - **Validation** prevents empty selections
 
 > **Note:** Always review the selected directories before confirming removal. The deletion process cannot be undone.
+>
