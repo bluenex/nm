@@ -17,16 +17,23 @@ export async function findNodeModulesWithSizes(
   targetPath: string,
   showProgress = true
 ): Promise<NodeModulesInfo[]> {
-  const spinner = showProgress ? ora('Scanning for node_modules directories...').start() : null;
-  
+  const spinner = showProgress
+    ? ora('Scanning for node_modules directories...').start()
+    : null;
+
   try {
     const resolvedPath = resolve(targetPath);
     const progress: ScanProgress = { foundCount: 0, currentPath: '' };
-    
-    const nodeModulesInfos = await scanDirectory(resolvedPath, false, progress, spinner || undefined);
-    
+
+    const nodeModulesInfos = await scanDirectory(
+      resolvedPath,
+      false,
+      progress,
+      spinner || undefined
+    );
+
     if (spinner) spinner.stop();
-    
+
     return nodeModulesInfos;
   } catch (error) {
     if (spinner) spinner.stop();
@@ -35,121 +42,136 @@ export async function findNodeModulesWithSizes(
 }
 
 async function scanDirectory(
-  dir: string, 
-  isInsideNodeModules = false, 
+  dir: string,
+  isInsideNodeModules = false,
   progress?: ScanProgress,
   spinner?: Ora
 ): Promise<NodeModulesInfo[]> {
   const results: NodeModulesInfo[] = [];
-  
+
   try {
     const dirStat = await stat(dir);
     if (!dirStat.isDirectory()) {
       return results;
     }
-    
+
     // Update progress
     if (progress && spinner) {
       progress.currentPath = dir;
       const shortPath = dir.length > 50 ? '...' + dir.slice(-47) : dir;
       spinner.text = `Scanning: ${shortPath} (found ${progress.foundCount})`;
     }
-    
+
     const entries = await readdir(dir);
-    
+
     for (const entry of entries) {
       const fullPath = join(dir, entry);
-      
+
       try {
         const entryStat = await stat(fullPath);
-        
+
         if (entryStat.isDirectory()) {
           if (entry === 'node_modules') {
             if (progress && spinner) {
               progress.foundCount++;
               spinner.text = `Calculating size of node_modules #${progress.foundCount}...`;
             }
-            
+
             const size = await getDirectorySize(fullPath, spinner);
             results.push({ path: fullPath, size });
-            
+
             if (progress && spinner) {
               spinner.text = `Found ${progress.foundCount} node_modules directories...`;
             }
           } else if (!isInsideNodeModules) {
-            const subResults = await scanDirectory(fullPath, false, progress, spinner);
+            const subResults = await scanDirectory(
+              fullPath,
+              false,
+              progress,
+              spinner
+            );
             results.push(...subResults);
           }
         }
-      } catch (error) {
+      } catch {
         continue;
       }
     }
-  } catch (error) {
+  } catch {
     throw new Error(`Cannot access directory: ${dir}`);
   }
-  
+
   return results;
 }
 
-export async function getDirectorySize(dirPath: string, spinner?: Ora): Promise<number> {
+export async function getDirectorySize(
+  dirPath: string,
+  spinner?: Ora
+): Promise<number> {
   try {
     // Try -sb first (bytes), fallback to -sk (kilobytes) for compatibility
     let output: string;
     try {
-      output = execSync(`du -sb "${dirPath}" 2>/dev/null`, { encoding: 'utf8' });
+      output = execSync(`du -sb "${dirPath}" 2>/dev/null`, {
+        encoding: 'utf8',
+      });
       const sizeStr = output.split('\t')[0];
       return parseInt(sizeStr, 10);
     } catch {
       // Fallback to kilobytes if -sb not supported
-      output = execSync(`du -sk "${dirPath}" 2>/dev/null`, { encoding: 'utf8' });
+      output = execSync(`du -sk "${dirPath}" 2>/dev/null`, {
+        encoding: 'utf8',
+      });
       const sizeStr = output.split('\t')[0];
       return parseInt(sizeStr, 10) * 1024; // Convert KB to bytes
     }
-  } catch (error) {
+  } catch {
     // Fallback to manual calculation if du fails completely
     return getDirectorySizeManual(dirPath, spinner);
   }
 }
 
-async function getDirectorySizeManual(dirPath: string, spinner?: Ora): Promise<number> {
+async function getDirectorySizeManual(
+  dirPath: string,
+  spinner?: Ora
+): Promise<number> {
   let totalSize = 0;
-  
+
   try {
     const entries = await readdir(dirPath);
-    
+
     for (const entry of entries) {
       const fullPath = join(dirPath, entry);
-      
+
       try {
         const stats = await stat(fullPath);
-        
+
         if (stats.isFile()) {
           // Use apparent file size to match du -A behavior
           totalSize += stats.size;
         } else if (stats.isDirectory()) {
           totalSize += await getDirectorySizeManual(fullPath, spinner);
         }
-      } catch (error) {
+      } catch {
         continue;
       }
     }
-  } catch (error) {
+  } catch {
     // Skip directories we can't read
   }
-  
+
   return totalSize;
 }
 
 export function formatBytes(bytes: number): string {
   if (bytes === 0) return '0B';
-  
+
   const k = 1024;
   const sizes = ['B', 'K', 'M', 'G', 'T'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  
+
   const size = bytes / Math.pow(k, i);
-  
+
   // Format similar to du -sh: no decimal for bytes, 1 decimal for others
   if (i === 0) {
     return `${Math.round(size)}${sizes[i]}`;
