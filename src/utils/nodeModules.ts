@@ -125,8 +125,8 @@ async function getDirectorySizeManual(dirPath: string, spinner?: Ora): Promise<n
         const stats = await stat(fullPath);
         
         if (stats.isFile()) {
-          // Use blocks * 512 to match du behavior more closely
-          totalSize += stats.blocks ? stats.blocks * 512 : stats.size;
+          // Use apparent file size to match du -A behavior
+          totalSize += stats.size;
         } else if (stats.isDirectory()) {
           totalSize += await getDirectorySizeManual(fullPath, spinner);
         }
