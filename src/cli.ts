@@ -3,13 +3,16 @@
 import { Command } from 'commander';
 import { lsCommand } from './commands/ls';
 import { rmCommand } from './commands/rm';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 
+const packageJson = JSON.parse(readFileSync(join(__dirname, '../package.json'), 'utf8'));
 const program = new Command();
 
 program
   .name('nm')
   .description('Node modules management CLI')
-  .version('1.0.0');
+  .version(packageJson.version);
 
 program
   .command('ls')
