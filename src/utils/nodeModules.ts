@@ -1,5 +1,6 @@
 import { readdir, stat } from 'fs/promises';
 import { join, resolve } from 'path';
+import { execSync } from 'child_process';
 import ora, { Ora } from 'ora';
 
 export interface NodeModulesInfo {
@@ -92,6 +93,26 @@ async function scanDirectory(
 }
 
 export async function getDirectorySize(dirPath: string, spinner?: Ora): Promise<number> {
+  try {
+    // Try -sb first (bytes), fallback to -sk (kilobytes) for compatibility
+    let output: string;
+    try {
+      output = execSync(`du -sb "${dirPath}" 2>/dev/null`, { encoding: 'utf8' });
+      const sizeStr = output.split('\t')[0];
+      return parseInt(sizeStr, 10);
+    } catch {
+      // Fallback to kilobytes if -sb not supported
+      output = execSync(`du -sk "${dirPath}" 2>/dev/null`, { encoding: 'utf8' });
+      const sizeStr = output.split('\t')[0];
+      return parseInt(sizeStr, 10) * 1024; // Convert KB to bytes
+    }
+  } catch (error) {
+    // Fallback to manual calculation if du fails completely
+    return getDirectorySizeManual(dirPath, spinner);
+  }
+}
+
+async function getDirectorySizeManual(dirPath: string, spinner?: Ora): Promise<number> {
   let totalSize = 0;
   
   try {
@@ -107,7 +128,7 @@ export async function getDirectorySize(dirPath: string, spinner?: Ora): Promise<
           // Use blocks * 512 to match du behavior more closely
           totalSize += stats.blocks ? stats.blocks * 512 : stats.size;
         } else if (stats.isDirectory()) {
-          totalSize += await getDirectorySize(fullPath, spinner);
+          totalSize += await getDirectorySizeManual(fullPath, spinner);
         }
       } catch (error) {
         continue;
