@@ -9,6 +9,10 @@
   "scripts": {
     "build": "tsc",
     "prepublishOnly": "npm run build",
+    "format": "prettier --write \"src/**/*.{ts,js,json}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,js,json}\"",
+    "lint": "eslint src/**/*.ts",
+    "lint:fix": "eslint src/**/*.ts --fix",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
@@ -36,6 +40,10 @@
   "devDependencies": {
     "@types/node": "^24.2.1",
     "@types/ora": "^3.1.0",
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
+    "eslint": "^9.0.0",
+    "prettier": "^3.3.0",
     "typescript": "^5.9.2"
   },
   "dependencies": {
