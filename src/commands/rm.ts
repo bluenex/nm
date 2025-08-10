@@ -1,6 +1,8 @@
-import inquirer from 'inquirer';
 import { rm } from 'fs/promises';
+import inquirer from 'inquirer';
 import ora from 'ora';
+import { resolve } from 'path';
+import { getCachedResults, setCachedResults } from '../utils/cache';
 import {
   findNodeModulesWithSizes,
   formatBytes,
@@ -15,8 +17,19 @@ interface CheckboxChoice {
 
 export async function rmCommand(targetPath: string): Promise<void> {
   try {
-    // Step 1: Find all node_modules directories
-    const nodeModulesInfos = await findNodeModulesWithSizes(targetPath);
+    const resolvedPath = resolve(targetPath);
+
+    // Step 1: Try to get cached results first, then scan if needed
+    let nodeModulesInfos = await getCachedResults(resolvedPath);
+
+    if (nodeModulesInfos) {
+      console.log('Using cached results...');
+    } else {
+      console.log('No recent cache found, scanning directories...');
+      nodeModulesInfos = await findNodeModulesWithSizes(targetPath);
+      // Cache the results for future use
+      await setCachedResults(resolvedPath, nodeModulesInfos);
+    }
 
     if (nodeModulesInfos.length === 0) {
       console.log('No node_modules directories found.');

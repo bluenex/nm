@@ -1,8 +1,21 @@
+import { resolve } from 'path';
+import { getCachedResults, setCachedResults } from '../utils/cache';
 import { findNodeModulesWithSizes, formatBytes } from '../utils/nodeModules';
 
 export async function lsCommand(targetPath: string): Promise<void> {
   try {
-    const nodeModulesInfos = await findNodeModulesWithSizes(targetPath);
+    const resolvedPath = resolve(targetPath);
+
+    // Try to get cached results first
+    let nodeModulesInfos = await getCachedResults(resolvedPath);
+
+    if (nodeModulesInfos) {
+      console.log('Using cached results...');
+    } else {
+      // Scan and cache results
+      nodeModulesInfos = await findNodeModulesWithSizes(targetPath);
+      await setCachedResults(resolvedPath, nodeModulesInfos);
+    }
 
     if (nodeModulesInfos.length === 0) {
       console.log('No node_modules directories found.');
